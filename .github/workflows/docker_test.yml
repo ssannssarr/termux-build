@@ -1,21 +1,38 @@
-name: termux-probe
-on: workflow_dispatch
+name: termux-wheels
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: PyPI package (sdist) to build
+        default: zensical
 
 jobs:
-  probe:
+  build:
     runs-on: ubuntu-24.04-arm
     steps:
-      - name: Probe Termux container
+      - name: Build in Termux container
         run: |
-          docker run --rm termux/termux-docker:aarch64 bash -c '
-            uname -m
-            echo $PREFIX
-            pkg update -y && pkg install -y python rust clang binutils
-            python -c "import sysconfig,platform; print(sysconfig.get_platform(), sysconfig.get_config_var(\"SOABI\"), platform.python_version())"
-            cargo --version
-            pkg install -y maturin
-            pip download zensical --no-binary :all: --no-deps -d src && cd src && tar xf *.tar.gz && cd zensical-*/
-            maturin build --release -o /tmp/wheels
-            ls /tmp/wheels   
-            readelf -d $(unzip -Z1 /tmp/wheels/*.whl | grep '\.so$' | head -1) | grep NEEDED
+          mkdir out && chmod 777 out
+          docker run --rm -e PKG="${{ inputs.package }}" -v "$PWD/out:/out" \
+            termux/termux-docker:aarch64 bash -c '
+            set -e
+            export ANDROID_API_LEVEL=24
+            pkg update -y && pkg install -y python rust clang binutils maturin
+            mkdir ~/src && cd ~/src
+            pip download "$PKG" --no-binary :all: --no-deps
+            tar xf *.tar.gz && cd */
+            maturin build --release -o ~/wheels
+            cd ~/wheels
+            for w in *.whl; do
+              case "$w" in *android_24_arm64_v8a.whl) ;; *) echo "BAD TAG: $w"; exit 1;; esac
+              unzip -Z1 "$w" | grep "\.so$" | while read s; do
+                unzip -p "$w" "$s" > /tmp/x.so; echo "== $s"; readelf -d /tmp/x.so | grep NEEDED
+              done
+            done
+            cp *.whl /out/
           '
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: termux-wheels
+          path: out/*.whl
