@@ -1,4 +1,5 @@
-name: termux-wheels
+name: primp-termux-wheels
+
 on:
   workflow_dispatch:
 
@@ -8,16 +9,17 @@ jobs:
     steps:
       - name: Build in Termux container
         run: |
-          docker run --name tb \
+          mkdir out && chmod 777 out
+          docker run --rm \
             termux/termux-docker:aarch64 bash -c '
             set -e
             export ANDROID_API_LEVEL=24
             pkg update -y && pkg install -y python rust clang binutils maturin
-            mkdir ~/src && cd ~/src
-            pip download zensical --no-binary :all: --no-deps
+            mkdir ~/src && cd ~/src || pwd
+            pip download primp --no-binary :all: --no-deps || echo "downloaded zensical"
             tar xf *.tar.gz && cd */
-            export RUSTFLAGS="-C link-arg=-L$PREFIX/lib -C link-arg=-lpython3.14"
             maturin build --release -o ~/wheels
+            sudo mkdir -p /tmp
             cd ~/wheels
             for w in *.whl; do
               case "$w" in *android_24_arm64_v8a.whl) ;; *) echo "BAD TAG: $w"; exit 1;; esac
@@ -25,13 +27,8 @@ jobs:
                 unzip -p "$w" "$s" > ~/x.so; echo "== $s"; readelf -d ~/x.so | grep NEEDED
               done
             done
+            cp *.whl /out/
           '
-
-      - name: Copy wheels out
-        run: |
-          mkdir out
-          docker cp tb:/data/data/com.termux/files/home/wheels/. out/
-          ls out
 
       - uses: actions/upload-artifact@v4
         with:
