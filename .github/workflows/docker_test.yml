@@ -8,14 +8,13 @@ jobs:
     steps:
       - name: Build in Termux container
         run: |
-          mkdir out && chmod 777 out
-          docker run --rm \
+          docker run --name tb \
             termux/termux-docker:aarch64 bash -c '
             set -e
             export ANDROID_API_LEVEL=24
             pkg update -y && pkg install -y python rust clang binutils maturin
-            mkdir ~/src && cd ~/src || pwd
-            pip download zensical --no-binary :all: --no-deps || echo "downloaded zensical"
+            mkdir ~/src && cd ~/src
+            pip download zensical --no-binary :all: --no-deps
             tar xf *.tar.gz && cd */
             maturin build --release -o ~/wheels
             cd ~/wheels
@@ -25,8 +24,13 @@ jobs:
                 unzip -p "$w" "$s" > ~/x.so; echo "== $s"; readelf -d ~/x.so | grep NEEDED
               done
             done
-            cp *.whl /out/
           '
+
+      - name: Copy wheels out
+        run: |
+          mkdir out
+          docker cp tb:/data/data/com.termux/files/home/wheels/. out/
+          ls out
 
       - uses: actions/upload-artifact@v4
         with:
