@@ -16,6 +16,7 @@ jobs:
             mkdir ~/src && cd ~/src
             pip download zensical --no-binary :all: --no-deps
             tar xf *.tar.gz && cd */
+            export RUSTFLAGS="-C link-arg=-L$PREFIX/lib -C link-arg=-lpython3.14"
             maturin build --release -o ~/wheels
             cd ~/wheels
             for w in *.whl; do
