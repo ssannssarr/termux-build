@@ -13,4 +13,9 @@ jobs:
             pkg update -y && pkg install -y python rust clang binutils
             python -c "import sysconfig,platform; print(sysconfig.get_platform(), sysconfig.get_config_var(\"SOABI\"), platform.python_version())"
             cargo --version
+            pkg install -y maturin
+            pip download zensical --no-binary :all: --no-deps -d src && cd src && tar xf *.tar.gz && cd zensical-*/
+            maturin build --release -o /tmp/wheels
+            ls /tmp/wheels   
+            readelf -d $(unzip -Z1 /tmp/wheels/*.whl | grep '\.so$' | head -1) | grep NEEDED
           '
