@@ -18,6 +18,7 @@ jobs:
             pip download zensical --no-binary :all: --no-deps || echo "downloaded zensical"
             tar xf *.tar.gz && cd */
             maturin build --release -o ~/wheels
+            sudo mkdir -p /tmp
             cd ~/wheels
             for w in *.whl; do
               case "$w" in *android_24_arm64_v8a.whl) ;; *) echo "BAD TAG: $w"; exit 1;; esac
