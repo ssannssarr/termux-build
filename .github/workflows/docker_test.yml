@@ -1,0 +1,22 @@
+name: Termux Envioroment Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Test Termux Docker
+        run: |
+          docker run --rm \
+          --platform linux/arm64 \
+          termux/termux-docker:aarch64 \
+          bash -c '
+            uname -m 
+            python --version
+            python -m pip --version
+            pkg list-installed
+          '
+
