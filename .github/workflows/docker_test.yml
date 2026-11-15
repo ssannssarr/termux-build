@@ -1,22 +1,16 @@
-name: Termux Envioroment Test
-
-on:
-  workflow_dispatch:
+name: termux-probe
+on: workflow_dispatch
 
 jobs:
-  test:
+  probe:
     runs-on: ubuntu-24.04-arm
-
     steps:
-      - name: Test Termux Docker
+      - name: Probe Termux container
         run: |
-          docker run --rm \
-          --platform linux/arm64 \
-          termux/termux-docker:aarch64 \
-          bash -c '
-            uname -m 
-            python --version
-            python -m pip --version
-            pkg list-installed
+          docker run --rm termux/termux-docker:aarch64 bash -c '
+            uname -m
+            echo $PREFIX
+            pkg update -y && pkg install -y python rust clang binutils
+            python -c "import sysconfig,platform; print(sysconfig.get_platform(), sysconfig.get_config_var(\"SOABI\"), platform.python_version())"
+            cargo --version
           '
-
