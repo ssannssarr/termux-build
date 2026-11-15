@@ -23,7 +23,7 @@ jobs:
             for w in *.whl; do
               case "$w" in *android_24_arm64_v8a.whl) ;; *) echo "BAD TAG: $w"; exit 1;; esac
               unzip -Z1 "$w" | grep "\.so$" | while read s; do
-                unzip -p "$w" "$s" > /tmp/x.so; echo "== $s"; readelf -d /tmp/x.so | grep NEEDED
+                unzip -p "$w" "$s" > ~/x.so; echo "== $s"; readelf -d ~/x.so | grep NEEDED
               done
             done
             cp *.whl /out/
